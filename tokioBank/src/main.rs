@@ -6,13 +6,13 @@ use tokio::sync::{mpsc, RwLock};
 use tokio::time::{self, Duration, Instant};
 
 struct Bank {
-    id: u32,
+    id: u8,
     balance: RwLock<i64>,
-    accounts: RwLock<HashMap<u32, i64>>,
+    accounts: RwLock<HashMap<u8, i64>>,
 }
 
 impl Bank {
-    fn new(id: u32) -> Bank {
+    fn new(id: u8) -> Bank {
         Bank {
             id,
             balance: RwLock::new(0),
@@ -20,13 +20,13 @@ impl Bank {
         }
     }
 
-    async fn get_balance(&self, account_id: u32) -> i64 {
+    async fn get_balance(&self, account_id: u8) -> i64 {
         time::sleep(Duration::from_millis(1000)).await;
         let accounts = self.accounts.read().await;
         *accounts.get(&account_id).unwrap_or(&0)
     }
 
-    async fn deposit(&self, account_id: u32, amount: i64) {
+    async fn deposit(&self, account_id: u8, amount: i64) {
         time::sleep(Duration::from_millis(1000)).await;
         let mut accounts = self.accounts.write().await;
         let balance = accounts.entry(account_id).or_insert(0);
@@ -36,7 +36,7 @@ impl Bank {
         *bank_balance += amount;
     }
 
-    async fn withdraw(&self, account_id: u32, amount: i64) -> bool {
+    async fn withdraw(&self, account_id: u8, amount: i64) -> bool {
         time::sleep(Duration::from_millis(1000)).await;
         let mut accounts = self.accounts.write().await;
         if let Some(balance) = accounts.get_mut(&account_id) {
@@ -54,8 +54,8 @@ impl Bank {
     async fn transfer(
         &self,
         to_bank: &mpsc::Sender<Transaction>,
-        from_account: u32,
-        to_account: u32,
+        from_account: u8,
+        to_account: u8,
         amount: i64,
     ) -> bool {
         time::sleep(Duration::from_millis(1000)).await;
@@ -75,28 +75,28 @@ impl Bank {
 
 enum Transaction {
     Deposit {
-        account_id: u32,
+        account_id: u8,
         amount: i64,
     },
     Withdraw {
-        account_id: u32,
+        account_id: u8,
         amount: i64,
     },
     Transfer {
-        to_bank_id: u32,
-        from_account: u32,
-        to_account: u32,
+        to_bank_id: u8,
+        from_account: u8,
+        to_account: u8,
         amount: i64,
     },
     GetBalance {
-        account_id: u32,
+        account_id: u8,
     },
 }
 
 async fn bank_thread(
     bank: Bank,
     mut receiver: mpsc::Receiver<Transaction>,
-    banks: HashMap<u32, mpsc::Sender<Transaction>>,
+    banks: HashMap<u8, mpsc::Sender<Transaction>>,
 ) {
     while let Some(transaction) = receiver.recv().await {
         match transaction {
