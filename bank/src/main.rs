@@ -7,13 +7,13 @@ use std::thread;
 use std::time::Instant;
 
 struct Bank {
-    id: u32,
+    id: u8,
     balance: RwLock<i64>,
-    accounts: RwLock<HashMap<u32, i64>>,
+    accounts: RwLock<HashMap<u8, i64>>,
 }
 
 impl Bank {
-    fn new(id: u32) -> Bank {
+    fn new(id: u8) -> Bank {
         Bank {
             id,
             balance: RwLock::new(0),
@@ -21,13 +21,13 @@ impl Bank {
         }
     }
 
-    fn get_balance(&self, account_id: u32) -> i64 {
+    fn get_balance(&self, account_id: u8) -> i64 {
         thread::sleep(Duration::from_millis(500));
         let accounts = self.accounts.read().unwrap();
         *accounts.get(&account_id).unwrap_or(&0)
     }
 
-    fn deposit(&self, account_id: u32, amount: i64) {
+    fn deposit(&self, account_id: u8, amount: i64) {
         thread::sleep(Duration::from_millis(500));
         let mut accounts = self.accounts.write().unwrap();
         let balance = accounts.entry(account_id).or_insert(0);
@@ -37,7 +37,7 @@ impl Bank {
         *bank_balance += amount;
     }
 
-    fn withdraw(&self, account_id: u32, amount: i64) -> bool {
+    fn withdraw(&self, account_id: u8, amount: i64) -> bool {
         thread::sleep(Duration::from_millis(500));
         let mut accounts = self.accounts.write().unwrap();
         if let Some(balance) = accounts.get_mut(&account_id) {
@@ -55,8 +55,8 @@ impl Bank {
     fn transfer(
         &self,
         to_bank: &Sender<Transaction>,
-        from_account: u32,
-        to_account: u32,
+        from_account: u8,
+        to_account: u8,
         amount: i64,
     ) -> bool {
         thread::sleep(Duration::from_millis(500));
@@ -76,24 +76,24 @@ impl Bank {
 
 enum Transaction {
     Deposit {
-        account_id: u32,
+        account_id: u8,
         amount: i64,
         response: Sender<()>,
     },
     Withdraw {
-        account_id: u32,
+        account_id: u8,
         amount: i64,
         response: Sender<()>,
     },
     Transfer {
-        to_bank_id: u32,
-        from_account: u32,
-        to_account: u32,
+        to_bank_id: u8,
+        from_account: u8,
+        to_account: u8,
         amount: i64,
         response: Sender<()>,
     },
     GetBalance {
-        account_id: u32,
+        account_id: u8,
         response: Sender<i64>,
     },
 }
@@ -101,7 +101,7 @@ enum Transaction {
 fn bank_thread(
     bank: Bank,
     receiver: Receiver<Transaction>,
-    banks: HashMap<u32, Sender<Transaction>>,
+    banks: HashMap<u8, Sender<Transaction>>,
 ) {
     while let Ok(transaction) = receiver.recv() {
         match transaction {
@@ -144,7 +144,7 @@ fn bank_thread(
     }
 }
 
-fn request_balance(sender: &Sender<Transaction>, account_id: u32) -> i64 {
+fn request_balance(sender: &Sender<Transaction>, account_id: u8) -> i64 {
     let (response_tx, response_rx) = mpsc::channel();
     sender
         .send(Transaction::GetBalance {
